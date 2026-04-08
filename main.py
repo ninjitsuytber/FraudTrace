@@ -15,7 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-API_KEY = "AIzaSyDV0Hk0be_cgwnoWEloVCEnL2wKr-k5E2Q"
+API_KEY = "[ENCRYPTION_KEY]"
 
 @app.post("/api/save-key")
 async def save_key(request: Request):

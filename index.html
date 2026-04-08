@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FraudTrace | System Origin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div id="app">
+    <main id="hero-view" class="hero-container">
+      <h1 id="hero-text" class="decrypter">FRAUDTRACE</h1>
+      <div id="button-container">
+        <button id="cta-button" class="neo-button">ENTER SYSTEM</button>
+      </div>
+    </main>
+
+    <section id="system-view" class="system-container hidden">
+      <div class="system-card">
+        <h2 class="view-title">SYSTEM AUTHORIZATION</h2>
+        <p class="view-subtitle">Establish a neural link with your Gemini API Key.</p>
+        <div class="input-group">
+          <input type="password" id="api-key-input" placeholder="GEMINI_API_KEY" class="neo-input" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          <button id="auth-button" class="neo-button small">AUTHORIZE</button>
+        </div>
+        <div id="auth-status" class="status-msg"></div>
+      </div>
+      <a href="https://aistudio.google.com/app/apikey" target="_blank" class="system-link">Where to get Gemini API key?</a>
+    </section>
+
+    <section id="database-view" class="hidden">
+      <div class="database-container">
+        <header class="database-header">
+          <div class="header-left">
+            <h1 class="header-title">Database Trace</h1>
+            <div id="db-connection-status" class="status-msg success">System Linked</div>
+          </div>
+          <button id="disconnect-button" class="neo-button small outline">Disconnect Link</button>
+        </header>
+
+        <div class="db-stats-bar">
+          <div class="stat-item">
+            <span class="stat-label">Total Tables</span>
+            <span id="stat-tables-count" class="stat-value">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Neural Status</span>
+            <span class="stat-value">Active</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Access Level</span>
+            <span class="stat-value">Root</span>
+          </div>
+        </div>
+
+        <main class="database-grid" id="tables-grid">
+          <div class="loading-state">Initializing Neural Trace...</div>
+        </main>
+      </div>
+
+      <footer class="database-footer">
+        <div class="star-border-container" id="analysis-portal">
+          <div class="star-border-glow-top"></div>
+          <div class="star-border-glow-bottom"></div>
+          <div class="star-border-inner">
+            <input type="text" id="analysis-input" placeholder="Neural Search: Analyze database patterns..." class="pill-input-modern" />
+            <button id="analyze-button" class="analyze-btn-modern">
+              <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+            <div id="neural-overlay" class="hidden">
+              <div class="data-grid"></div>
+              <div class="scanline"></div>
+              <div class="status-box">
+                <span class="status-tag">[NEURAL_LINK]</span>
+                <span id="neural-status-text">TRACING PATHS...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </section>
+
+    <div id="ai-output-modal" class="hidden">
+      <div class="modal-content">
+        <button id="close-modal-btn" class="close-btn">&times;</button>
+        <h3 class="modal-title">AI Analysis Output</h3>
+        <div id="ai-output-text" class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>

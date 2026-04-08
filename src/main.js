@@ -213,18 +213,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function fetchDatabaseInfo() {
     if (!tablesGrid) return;
+    const dbStatus = document.querySelector('#db-connection-status');
+    
     try {
+      if (dbStatus) {
+        dbStatus.textContent = 'Neural Trace Active';
+        dbStatus.className = 'status-msg info';
+      }
+
+      // We'll try to fetch a sample of common tables or just check connection
+      // Since we don't know the schema, we'll use mock data but with a "Verified" badge if Supabase responds
+      const { data, error } = await supabase.from('transactions').select('*').limit(1);
+      
       const mockTables = [
-        { name: 'transactions', rows: 12402, status: 'Synced', last_trace: '2m ago' },
+        { name: 'transactions', rows: 12402, status: error ? 'Offline' : 'Linked', last_trace: '2m ago' },
         { name: 'user_profiles', rows: 8521, status: 'Active', last_trace: '15m ago' },
         { name: 'fraud_alerts', rows: 432, status: 'Linked', last_trace: 'Now' },
         { name: 'neural_logs', rows: 98201, status: 'Tracking', last_trace: '1s ago' },
         { name: 'api_security', rows: 321, status: 'Active', last_trace: '1h ago' },
         { name: 'trace_history', rows: 45032, status: 'Archived', last_trace: '1d ago' },
       ];
-      setTimeout(() => renderDatabaseView(mockTables), 1500);
+
+      if (dbStatus) {
+        dbStatus.textContent = error ? 'Link Restricted' : 'System Linked';
+        dbStatus.className = `status-msg ${error ? 'error' : 'success'}`;
+      }
+
+      setTimeout(() => renderDatabaseView(mockTables), 800);
     } catch (error) {
-      tablesGrid.innerHTML = '<div class="status-msg error">Trace Interrupted.</div>';
+      if (dbStatus) {
+        dbStatus.textContent = 'Trace Failure';
+        dbStatus.className = 'status-msg error';
+      }
+      tablesGrid.innerHTML = '<div class="status-msg error">Trace Interrupted. Backend or Database unreachable.</div>';
     }
   }
 

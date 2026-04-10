@@ -1,5 +1,7 @@
 import './style.css';
-import { supabase } from './lib/supabase.js';
+import { supabase, initSupabase } from './lib/supabase.js';
+
+let databaseSummary = "No active database link established.";
 
 class TextDecrypter {
   constructor(element) {
@@ -51,7 +53,7 @@ class TextDecrypter {
     const currentElapsed = performance.now() - this.startTime;
     const totalElapsed = this.elapsedAtPause + currentElapsed;
     const progress = Math.min(1, totalElapsed / this.duration);
-    
+
     this.iteration = progress * this.targetText.length;
 
     this.element.innerText = this.targetText
@@ -84,7 +86,6 @@ class TextDecrypter {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // DOM Elements (Selected inside for safety)
   const heroView = document.querySelector('#hero-view');
   const systemView = document.querySelector('#system-view');
   const databaseView = document.querySelector('#database-view');
@@ -103,22 +104,47 @@ document.addEventListener('DOMContentLoaded', () => {
   const aiOutputModal = document.querySelector('#ai-output-modal');
   const aiOutputText = document.querySelector('#ai-output-text');
   const closeModalBtn = document.querySelector('#close-modal-btn');
+  const downloadReportBtn = document.querySelector('#download-report-btn');
+  const dbStatus = document.querySelector('#db-connection-status');
+  const statOverallHealth = document.querySelector('#stat-overall-health');
+  const statLastTrace = document.querySelector('#stat-last-trace');
+
+  const supabaseAuthView = document.querySelector('#supabase-auth-view');
+  const supabaseUrlInput = document.querySelector('#supabase-url-input');
+  const supabaseKeyInput = document.querySelector('#supabase-key-input');
+  const supabaseAuthButton = document.querySelector('#supabase-auth-button');
+  const supabaseAuthStatus = document.querySelector('#supabase-auth-status');
+  const connectDbButton = document.querySelector('#connect-db-button');
+  const disconnectDbButton = document.querySelector('#disconnect-db-button');
+  const disconnectAiButton = document.querySelector('#disconnect-ai-button');
+  const backToDbBtn = document.querySelector('#back-to-db-btn');
+  const analysisPortal = document.querySelector('#analysis-portal');
+
+  function showSupabaseStatus(msg, type) {
+    if (!supabaseAuthStatus) return;
+    supabaseAuthStatus.textContent = msg;
+    supabaseAuthStatus.className = `status-msg ${type}`;
+    if (type === 'error') {
+      setTimeout(() => {
+        if (supabaseAuthStatus.textContent === msg) supabaseAuthStatus.textContent = '';
+      }, 6000);
+    }
+  }
 
   function showStatus(msg, type) {
     if (!authStatus) return;
     authStatus.textContent = msg;
     authStatus.className = `status-msg ${type}`;
     if (type === 'error') {
-       // Only clear if another message hasn't overwritten it
-       setTimeout(() => {
-         if (authStatus.textContent === msg) authStatus.textContent = '';
-       }, 6000);
+      setTimeout(() => {
+        if (authStatus.textContent === msg) authStatus.textContent = '';
+      }, 6000);
     }
   }
 
   async function validateApiKey(key) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000); 
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
 
     try {
       const response = await fetch('http://127.0.0.1:8000/api/save-key', {
@@ -137,16 +163,38 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function navigateToDatabase() {
-    const currentView = !heroView.classList.contains('hidden') ? heroView : systemView;
+    const currentView = !heroView.classList.contains('hidden') ? heroView :
+      (!systemView.classList.contains('hidden') ? systemView : supabaseAuthView);
+
     currentView.classList.add('fade-out');
-    
+
     setTimeout(() => {
       currentView.classList.add('hidden');
-      databaseView.classList.remove('hidden');
+      currentView.classList.remove('fade-out');
+      currentView.classList.remove('visible');
 
+      databaseView.classList.remove('hidden');
       requestAnimationFrame(() => {
         databaseView.classList.add('visible');
         fetchDatabaseInfo();
+      });
+    }, 800);
+  }
+
+  function navigateToSupabaseAuth() {
+    databaseView.classList.add('fade-out');
+    setTimeout(() => {
+      databaseView.classList.add('hidden');
+      databaseView.classList.remove('fade-out');
+      databaseView.classList.remove('visible');
+
+      supabaseAuthView.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        supabaseAuthView.classList.add('visible');
+        const savedUrl = localStorage.getItem('fraudtrace_supabase_url');
+        const savedKey = localStorage.getItem('fraudtrace_supabase_key');
+        if (savedUrl) supabaseUrlInput.value = savedUrl;
+        if (savedKey) supabaseKeyInput.value = savedKey;
       });
     }, 800);
   }
@@ -175,31 +223,35 @@ document.addEventListener('DOMContentLoaded', () => {
       if (neuralStatusText) neuralStatusText.textContent = statusMessages[statusIndex];
     }, 800);
 
+    const fullPrompt = `DATABASE CONTEXT:\n${databaseSummary}\n\nUSER QUERY:\n${query}`;
+
     try {
       const response = await fetch('http://127.0.0.1:8000/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: query })
+        body: JSON.stringify({ message: fullPrompt })
       });
-      
+
       const data = await response.json();
-      
+
       if (data.error) {
-         if (data.error === 'API_EXHAUSTED') {
-             localStorage.removeItem('fraudtrace_gemini_api_key');
-             apiKeyInput.value = '';
-             returnToSystemView('API link expired. Please re-authenticate.');
-         } else {
-             analysisInput.placeholder = "Trace Failed: Backend Error";
-         }
+        if (data.error === 'API_EXHAUSTED') {
+          localStorage.removeItem('fraudtrace_gemini_api_key');
+          apiKeyInput.value = '';
+          returnToSystemView('API link expired. Please re-authenticate.');
+        } else {
+          showAnalysisError(data.error);
+        }
       } else {
-         analysisInput.placeholder = originalPlaceholder;
-         aiOutputText.textContent = data.response;
-         aiOutputModal.classList.remove('hidden');
-         setTimeout(() => aiOutputModal.classList.add('visible'), 10);
+        analysisInput.placeholder = originalPlaceholder;
+        aiOutputText.textContent = data.response;
+        const downloadBtn = document.getElementById('download-report-btn');
+        if (downloadBtn) downloadBtn.classList.remove('hidden');
+        aiOutputModal.classList.remove('hidden');
+        setTimeout(() => aiOutputModal.classList.add('visible'), 10);
       }
     } catch (error) {
-      analysisInput.placeholder = "Trace Interrupted: Connection Failed";
+      showAnalysisError("Neural Link Failure: " + error.message);
     }
 
     clearInterval(statusInterval);
@@ -209,66 +261,266 @@ document.addEventListener('DOMContentLoaded', () => {
     neuralOverlay.classList.add('hidden');
     analysisInput.disabled = false;
     analyzeButton.disabled = false;
-  }
 
-  async function fetchDatabaseInfo() {
-    if (!tablesGrid) return;
-    const dbStatus = document.querySelector('#db-connection-status');
-    
-    try {
-      if (dbStatus) {
-        dbStatus.textContent = 'Neural Trace Active';
-        dbStatus.className = 'status-msg info';
-      }
-
-      // We'll try to fetch a sample of common tables or just check connection
-      // Since we don't know the schema, we'll use mock data but with a "Verified" badge if Supabase responds
-      const { data, error } = await supabase.from('transactions').select('*').limit(1);
-      
-      const mockTables = [
-        { name: 'transactions', rows: 12402, status: error ? 'Offline' : 'Linked', last_trace: '2m ago' },
-        { name: 'user_profiles', rows: 8521, status: 'Active', last_trace: '15m ago' },
-        { name: 'fraud_alerts', rows: 432, status: 'Linked', last_trace: 'Now' },
-        { name: 'neural_logs', rows: 98201, status: 'Tracking', last_trace: '1s ago' },
-        { name: 'api_security', rows: 321, status: 'Active', last_trace: '1h ago' },
-        { name: 'trace_history', rows: 45032, status: 'Archived', last_trace: '1d ago' },
-      ];
-
-      if (dbStatus) {
-        dbStatus.textContent = error ? 'Link Restricted' : 'System Linked';
-        dbStatus.className = `status-msg ${error ? 'error' : 'success'}`;
-      }
-
-      setTimeout(() => renderDatabaseView(mockTables), 800);
-    } catch (error) {
-      if (dbStatus) {
-        dbStatus.textContent = 'Trace Failure';
-        dbStatus.className = 'status-msg error';
-      }
-      tablesGrid.innerHTML = '<div class="status-msg error">Trace Interrupted. Backend or Database unreachable.</div>';
+    if (!analysisInput.placeholder.includes('Failed') && !analysisInput.placeholder.includes('Error')) {
+      analysisInput.placeholder = originalPlaceholder;
     }
   }
 
-  function renderDatabaseView(tables) {
-    if (!tablesGrid) return;
-    tablesGrid.innerHTML = '';
-    statTablesCount.textContent = tables.length;
-    tables.forEach(table => {
-      const card = document.createElement('div');
-      card.className = 'table-card';
-      card.innerHTML = `
-        <div class="table-name">${table.name}</div>
-        <div class="table-meta">
-          <div class="meta-row"><span>Rows</span><span>${table.rows.toLocaleString()}</span></div>
-          <div class="meta-row"><span>Status</span><span>${table.status}</span></div>
-          <div class="meta-row"><span>Last Trace</span><span>${table.last_trace}</span></div>
-        </div>
-      `;
-      tablesGrid.appendChild(card);
-    });
+  function showAnalysisError(msg) {
+    aiOutputText.textContent = `SYSTEM ERROR DETECTED:\n\n${msg}\n\n[REASON: Gemini API under high demand or context limit exceeded. Please try again after a brief cooldown.]`;
+    const downloadBtn = document.getElementById('download-report-btn');
+    if (downloadBtn) downloadBtn.classList.add('hidden');
+    aiOutputModal.classList.remove('hidden');
+    setTimeout(() => aiOutputModal.classList.add('visible'), 10);
+    analysisInput.placeholder = "Analysis Interrupted.";
   }
 
-  function returnToSystemView(errorMessage) {
+  async function discoverTables(url, key) {
+    const cleanUrl = url.endsWith('/') ? url : `${url}/`;
+    const commonHeaders = {
+      'apikey': key,
+      'Authorization': `Bearer ${key}`,
+      'Content-Type': 'application/json'
+    };
+
+    let tablesFound = [];
+    let authenticated = false;
+
+    try {
+      const gqlResponse = await fetch(`${cleanUrl}graphql/v1`, {
+        method: 'POST',
+        headers: commonHeaders,
+        body: JSON.stringify({ query: '{ __schema { types { name kind fields { name } } } }' })
+      });
+
+      if (gqlResponse.ok) {
+        authenticated = true;
+        const data = await gqlResponse.json();
+        const types = data.data?.__schema?.types;
+        if (types) {
+          types.forEach(type => {
+            if (type.kind === 'OBJECT' &&
+              !type.name.startsWith('__') &&
+              !['Query', 'Mutation', 'PageInfo'].includes(type.name) &&
+              !/Connection$|Response$|Edge$|Filter$|Input$|OrderBy$/.test(type.name)) {
+              tablesFound.push({
+                name: type.name,
+                columns: type.fields ? type.fields.map(f => f.name) : []
+              });
+            }
+          });
+          if (tablesFound.length > 0) return tablesFound.sort((a, b) => a.name.localeCompare(b.name));
+        }
+      } else if (gqlResponse.status === 401 || gqlResponse.status === 403) {
+      }
+    } catch (e) {
+      console.warn("GraphQL Check Failed:", e);
+    }
+
+    try {
+      const restResponse = await fetch(`${cleanUrl}rest/v1/`, { headers: { 'apikey': key, 'Authorization': `Bearer ${key}` } });
+      if (restResponse.ok) {
+        authenticated = true;
+        const data = await restResponse.json();
+
+        if (data.definitions) {
+          Object.keys(data.definitions).forEach(name => {
+            const def = data.definitions[name];
+            if (def.type === 'object') {
+              tablesFound.push({ name, columns: Object.keys(def.properties || {}) });
+            }
+          });
+        }
+        else if (data.components && data.components.schemas) {
+          Object.keys(data.components.schemas).forEach(name => {
+            const def = data.components.schemas[name];
+            if (def.type === 'object') {
+              tablesFound.push({ name, columns: Object.keys(def.properties || {}) });
+            }
+          });
+        }
+
+        if (tablesFound.length > 0) return tablesFound.sort((a, b) => a.name.localeCompare(b.name));
+
+        return [];
+      } else if (restResponse.status === 401 || restResponse.status === 403) {
+        return null;
+      }
+    } catch (e) {
+      console.error("OpenAPI Check Failed:", e);
+    }
+
+    return authenticated ? [] : null;
+  }
+
+  async function fetchDatabaseInfo() {
+    const databaseExplorer = document.getElementById('database-explorer');
+    const noDbState = document.getElementById('no-db-state');
+    const sidebarList = document.getElementById('sidebar-list');
+    const dbStatus = document.querySelector('#db-connection-status');
+    const dbStatsBar = document.getElementById('db-stats-bar');
+    const statTablesCount = document.getElementById('stat-tables-count');
+
+    const savedUrl = localStorage.getItem('fraudtrace_supabase_url');
+    const savedKey = localStorage.getItem('fraudtrace_supabase_key');
+
+    if (!savedUrl || !savedKey) {
+      if (dbStatus) {
+        dbStatus.textContent = 'System Offline';
+        dbStatus.className = 'status-msg error';
+      }
+      if (dbStatsBar) dbStatsBar.classList.add('hidden');
+      if (databaseExplorer) databaseExplorer.classList.add('hidden');
+      if (noDbState) noDbState.classList.remove('hidden');
+
+      if (connectDbButton) connectDbButton.classList.remove('hidden');
+      if (disconnectDbButton) disconnectDbButton.classList.add('hidden');
+      if (analysisPortal) analysisPortal.classList.add('hidden');
+      return;
+    }
+
+    initSupabase(savedUrl, savedKey);
+
+    try {
+      if (dbStatus) {
+        dbStatus.textContent = 'Tracing Schemas...';
+        dbStatus.className = 'status-msg info';
+      }
+
+      if (databaseExplorer) databaseExplorer.classList.remove('hidden');
+      if (noDbState) noDbState.classList.add('hidden');
+      if (sidebarList) sidebarList.innerHTML = '<div class="sidebar-item" style="opacity: 0.5;">Loading schemas...</div>';
+      const discoveredTables = await discoverTables(savedUrl, savedKey);
+
+      let tablesToProbe = [];
+      if (discoveredTables !== null) {
+        tablesToProbe = discoveredTables;
+      } else {
+        tablesToProbe = [
+          { name: 'transactions', columns: [] },
+          { name: 'users', columns: [] },
+          { name: 'logs', columns: [] }
+        ];
+      }
+
+      if (sidebarList) {
+        sidebarList.innerHTML = '';
+        if (tablesToProbe.length === 0) {
+          sidebarList.innerHTML = '<div class="sidebar-item" style="opacity: 0.5; font-size: 0.8em; line-height: 1.4;">Schema Access Restricted<br><span style="font-size: 0.7em;">(Use Neural Search to query)</span></div>';
+        } else {
+          tablesToProbe.forEach(table => {
+            const div = document.createElement('div');
+            div.className = 'sidebar-item';
+            div.textContent = table.name;
+            div.onclick = () => loadTableData(table.name, div, table.columns);
+            sidebarList.appendChild(div);
+          });
+        }
+      }
+
+      if (dbStatus) {
+        dbStatus.textContent = 'Neural Trace Active';
+        dbStatus.className = 'status-msg success';
+      }
+
+      if (dbStatsBar) dbStatsBar.classList.remove('hidden');
+      if (statTablesCount) statTablesCount.textContent = tablesToProbe.length;
+
+      const detailedTables = tablesToProbe.slice(0, 10);
+      const remainingTables = tablesToProbe.slice(10);
+
+      let summary = `DATABASE CONTEXT: Connected to Supabase (${tablesToProbe.length} tables found).\n\n`;
+      summary += "--- DETAILED SCHEMAS (TOP 10) ---\n";
+      summary += detailedTables.map(t => `- ${t.name}: [${t.columns.join(', ') || 'no columns discovered'}]`).join('\n');
+
+      if (remainingTables.length > 0) {
+        summary += "\n\n--- OTHER DISCOVERED TABLES (NAME ONLY) ---\n";
+        summary += remainingTables.map(t => t.name).join(', ');
+        summary += "\n\n(Note: If you need details on these tables, please ask.)";
+      }
+
+      databaseSummary = summary;
+
+      if (connectDbButton) connectDbButton.classList.add('hidden');
+      if (disconnectDbButton) disconnectDbButton.classList.remove('hidden');
+      if (analysisPortal) analysisPortal.classList.remove('hidden');
+
+    } catch (err) {
+      if (dbStatus) {
+        dbStatus.textContent = 'Trace Failed';
+        dbStatus.className = 'status-msg error';
+      }
+      if (databaseExplorer) databaseExplorer.classList.add('hidden');
+      if (noDbState) noDbState.classList.remove('hidden');
+    }
+  }
+
+  async function loadTableData(tableName, sidebarElement, tableColumns = []) {
+    const dataThead = document.getElementById('data-thead');
+    const dataTbody = document.getElementById('data-tbody');
+    const panelTitle = document.getElementById('panel-title');
+
+    document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+    if (sidebarElement) sidebarElement.classList.add('active');
+
+    if (panelTitle) panelTitle.textContent = `LOADING ${tableName}...`;
+    if (dataThead) dataThead.innerHTML = '';
+    if (dataTbody) dataTbody.innerHTML = '<tr><td style="padding: 2rem; opacity: 0.5; text-align: center;">Fetching data stream...</td></tr>';
+
+    try {
+      const { data, error } = await supabase.from(tableName).select('*').limit(50);
+
+      if (error) {
+        if (panelTitle) panelTitle.textContent = `ERROR: ${tableName}`;
+        if (dataTbody) dataTbody.innerHTML = `<tr><td style="color: #ff4a4a; padding: 1rem;">Error fetching ${tableName}: ${error.message}<br><br>If this is PGRST205, the table might not exist or isn't exposed in the API.</td></tr>`;
+        return;
+      }
+
+      if (panelTitle) panelTitle.textContent = `TABLE: ${tableName} (Maximum 50 Recent Entries)`;
+
+      let columns = [];
+      if (data && data.length > 0) {
+        columns = Object.keys(data[0]);
+      } else if (tableColumns && tableColumns.length > 0) {
+        columns = tableColumns;
+      }
+
+      if (dataThead) {
+        if (columns.length > 0) {
+          dataThead.innerHTML = `<tr>${columns.map(col => `<th>${col}</th>`).join('')}</tr>`;
+        } else {
+          dataThead.innerHTML = `<tr><th>Notice</th></tr>`;
+        }
+      }
+
+      if (!data || data.length === 0) {
+        if (dataTbody) {
+          const colspan = columns.length > 0 ? columns.length : 1;
+          dataTbody.innerHTML = `<tr><td colspan="${colspan}" style="padding: 2rem; opacity: 0.7; text-align: center; color: #ffdb58;">0 Rows Returned.<br><br><span style="font-size: 0.8em; opacity: 0.7;">The table is either empty, or Supabase Row-Level Security (RLS) is blocking access.</span></td></tr>`;
+        }
+        return;
+      }
+
+      if (dataTbody) {
+        dataTbody.innerHTML = data.map(row => {
+          return `<tr>${columns.map(col => {
+            let val = row[col];
+            if (typeof val === 'object' && val !== null) val = JSON.stringify(val);
+            return `<td>${val !== null && val !== undefined ? val : '<em>null</em>'}</td>`;
+          }).join('')}</tr>`;
+        }).join('');
+      }
+
+    } catch (err) {
+      console.error(err);
+      if (dataTbody) dataTbody.innerHTML = `<tr><td style="color: #ff4a4a; padding: 1rem;">Unexpected Error: ${err.message}</td></tr>`;
+    }
+  }
+
+
+
+  function returnToSystemView(message, type = 'error') {
     databaseView.classList.remove('visible');
     setTimeout(() => {
       databaseView.classList.add('hidden');
@@ -276,20 +528,16 @@ document.addEventListener('DOMContentLoaded', () => {
       systemView.classList.remove('fade-out');
       requestAnimationFrame(() => {
         systemView.classList.add('visible');
-        if (errorMessage) showStatus(errorMessage, 'error');
+        if (message) showStatus(message, type);
       });
     }, 800);
   }
-
-  // Hero Logic
   const heroElement = document.querySelector('#hero-text');
   if (heroElement) {
     const decrypter = new TextDecrypter(heroElement);
     heroElement.classList.add('reveal-fade');
     decrypter.decrypt();
   }
-
-  // CTA Link Logic with saved key validation
   if (ctaButton) {
     ctaButton.addEventListener('click', async () => {
       const savedKey = localStorage.getItem('fraudtrace_gemini_api_key');
@@ -321,8 +569,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-
-  // Auth Button Logic with deep validation
   if (authButton && apiKeyInput) {
     const savedKey = localStorage.getItem('fraudtrace_gemini_api_key');
     if (savedKey) {
@@ -339,9 +585,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       showStatus('Validating Neural Link...', 'info');
       authButton.disabled = true;
-      
+
       const result = await validateApiKey(key);
-      
+
       if (result.ok) {
         localStorage.setItem('fraudtrace_gemini_api_key', key);
         showStatus('Link Active. Access Granted.', 'success');
@@ -359,7 +605,78 @@ document.addEventListener('DOMContentLoaded', () => {
   if (disconnectButton) {
     disconnectButton.addEventListener('click', () => {
       localStorage.removeItem('fraudtrace_gemini_api_key');
+      localStorage.removeItem('fraudtrace_supabase_url');
+      localStorage.removeItem('fraudtrace_supabase_key');
       location.reload();
+    });
+  }
+  if (connectDbButton) {
+    connectDbButton.addEventListener('click', navigateToSupabaseAuth);
+  }
+
+  if (disconnectDbButton) {
+    disconnectDbButton.addEventListener('click', () => {
+      localStorage.removeItem('fraudtrace_supabase_url');
+      localStorage.removeItem('fraudtrace_supabase_key');
+      fetchDatabaseInfo();
+    });
+  }
+
+  if (disconnectAiButton) {
+    disconnectAiButton.addEventListener('click', () => {
+      localStorage.removeItem('fraudtrace_gemini_api_key');
+      if (apiKeyInput) apiKeyInput.value = '';
+      returnToSystemView('Neural link disconnected.', 'info');
+    });
+  }
+
+  if (backToDbBtn) {
+    backToDbBtn.addEventListener('click', () => {
+      supabaseAuthView.classList.remove('visible');
+      setTimeout(() => {
+        supabaseAuthView.classList.add('hidden');
+        databaseView.classList.remove('hidden');
+        requestAnimationFrame(() => {
+          databaseView.classList.add('visible');
+          fetchDatabaseInfo();
+        });
+      }, 800);
+    });
+  }
+
+  if (supabaseAuthButton) {
+    supabaseAuthButton.addEventListener('click', async () => {
+      const url = supabaseUrlInput.value.trim();
+      const key = supabaseKeyInput.value.trim();
+
+      if (!url || !key) {
+        showSupabaseStatus('Provide both URL and Key.', 'error');
+        return;
+      }
+
+      showSupabaseStatus('Testing Connection...', 'info');
+      supabaseAuthButton.disabled = true;
+
+      const testClient = initSupabase(url, key);
+      try {
+        const tables = await discoverTables(url, key);
+
+        if (tables === null) {
+          throw new Error("Authentication Failed. Please check your credentials.");
+        }
+
+        localStorage.setItem('fraudtrace_supabase_url', url);
+        localStorage.setItem('fraudtrace_supabase_key', key);
+        showSupabaseStatus('Connection Verified.', 'success');
+
+        setTimeout(() => {
+          navigateToDatabase();
+          supabaseAuthButton.disabled = false;
+        }, 1200);
+      } catch (err) {
+        showSupabaseStatus('Connection Failed: ' + err.message, 'error');
+        supabaseAuthButton.disabled = false;
+      }
     });
   }
 
@@ -374,6 +691,44 @@ document.addEventListener('DOMContentLoaded', () => {
     closeModalBtn.addEventListener('click', () => {
       aiOutputModal.classList.remove('visible');
       setTimeout(() => aiOutputModal.classList.add('hidden'), 500);
+    });
+  }
+
+  if (downloadReportBtn) {
+    downloadReportBtn.addEventListener('click', async () => {
+      const text = aiOutputText.textContent;
+      if (!text) return;
+
+      try {
+        downloadReportBtn.disabled = true;
+        const originalText = downloadReportBtn.textContent;
+        downloadReportBtn.textContent = 'GENERATING...';
+
+        const response = await fetch('http://127.0.0.1:8000/api/download-report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+
+        if (!response.ok) throw new Error('Export failed');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Analysis_Report.pdf';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        downloadReportBtn.textContent = originalText;
+        downloadReportBtn.disabled = false;
+      } catch (error) {
+        console.error('Download error:', error);
+        alert('Failed to generate report locally.');
+        downloadReportBtn.disabled = false;
+      }
     });
   }
 });

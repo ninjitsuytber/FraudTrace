@@ -14,7 +14,7 @@
 <body>
   <div id="app">
     <main id="hero-view" class="hero-container">
-      <h1 id="hero-text" class="decrypter">FRAUDTRACE</h1>
+      <h1 id="hero-text" class="decrypter">FRAUD TRACE</h1>
       <div id="button-container">
         <button id="cta-button" class="neo-button">ENTER SYSTEM</button>
       </div>
@@ -25,12 +25,32 @@
         <h2 class="view-title">SYSTEM AUTHORIZATION</h2>
         <p class="view-subtitle">Establish a neural link with your Gemini API Key.</p>
         <div class="input-group">
-          <input type="password" id="api-key-input" placeholder="GEMINI_API_KEY" class="neo-input" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          <input type="password" id="api-key-input" placeholder="GEMINI_API_KEY" class="neo-input" autocorrect="off"
+            autocapitalize="off" spellcheck="false" />
           <button id="auth-button" class="neo-button small">AUTHORIZE</button>
         </div>
         <div id="auth-status" class="status-msg"></div>
       </div>
-      <a href="https://aistudio.google.com/app/apikey" target="_blank" class="system-link">Where to get Gemini API key?</a>
+      <a href="https://aistudio.google.com/app/apikey" target="_blank" class="system-link">Where to get Gemini API
+        key?</a>
+    </section>
+
+    <section id="supabase-auth-view" class="system-container hidden">
+      <div class="system-card">
+        <h2 class="view-title">DATABASE LINK</h2>
+        <p class="view-subtitle">Connect your Supabase project to initiate the trace.</p>
+        <div class="input-stack">
+          <input type="text" id="supabase-url-input" placeholder="SUPABASE_PROJECT_URL" class="neo-input"
+            autocorrect="off" autocapitalize="off" spellcheck="false" />
+          <input type="password" id="supabase-key-input" placeholder="SUPABASE_PUBLISHABLE_KEY" class="neo-input"
+            autocorrect="off" autocapitalize="off" spellcheck="false" />
+          <button id="supabase-auth-button" class="neo-button">ESTABLISH LINK</button>
+        </div>
+        <div id="supabase-auth-status" class="status-msg"></div>
+      </div>
+      <a href="https://supabase.com/dashboard/project/_/settings/api" target="_blank" class="system-link">Where to get
+        Supabase URL and Key?</a>
+      <button id="back-to-db-btn" class="system-link-btn">Back to Dashboard</button>
     </section>
 
     <section id="database-view" class="hidden">
@@ -38,12 +58,16 @@
         <header class="database-header">
           <div class="header-left">
             <h1 class="header-title">Database Trace</h1>
-            <div id="db-connection-status" class="status-msg success">System Linked</div>
+            <div id="db-connection-status" class="status-msg error">System Offline</div>
           </div>
-          <button id="disconnect-button" class="neo-button small outline">Disconnect Link</button>
+          <div class="header-actions">
+            <button id="disconnect-db-button" class="neo-button small outline hidden">Disconnect DB</button>
+            <button id="connect-db-button" class="neo-button small">Connect to New Database</button>
+            <button id="disconnect-ai-button" class="neo-button small black">Disconnect Neural Link</button>
+          </div>
         </header>
 
-        <div class="db-stats-bar">
+        <div class="db-stats-bar hidden" id="db-stats-bar">
           <div class="stat-item">
             <span class="stat-label">Total Tables</span>
             <span id="stat-tables-count" class="stat-value">0</span>
@@ -58,9 +82,25 @@
           </div>
         </div>
 
-        <main class="database-grid" id="tables-grid">
-          <div class="loading-state">Initializing Neural Trace...</div>
+        <main class="database-explorer hidden" id="database-explorer">
+          <aside class="schema-sidebar">
+             <div class="sidebar-header">DISCOVERED SCHEMAS</div>
+             <div class="sidebar-list" id="sidebar-list"></div>
+          </aside>
+          <div class="data-panel" id="data-panel">
+            <div class="panel-header">
+               <h3 id="panel-title">SELECT A TABLE</h3>
+            </div>
+            <div class="table-scroll-container">
+               <table class="data-table" id="data-table">
+                  <thead id="data-thead"></thead>
+                  <tbody id="data-tbody"></tbody>
+               </table>
+            </div>
+          </div>
         </main>
+
+        <div id="no-db-state" class="loading-state">NO DATABASE LINKED</div>
       </div>
 
       <footer class="database-footer">
@@ -68,9 +108,11 @@
           <div class="star-border-glow-top"></div>
           <div class="star-border-glow-bottom"></div>
           <div class="star-border-inner">
-            <input type="text" id="analysis-input" placeholder="Neural Search: Analyze database patterns..." class="pill-input-modern" />
+            <input type="text" id="analysis-input" placeholder="Neural Search: Analyze database patterns..."
+              class="pill-input-modern" />
             <button id="analyze-button" class="analyze-btn-modern">
-              <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.5" fill="none"
+                stroke-linecap="round" stroke-linejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"></line>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
               </svg>
@@ -91,12 +133,15 @@
     <div id="ai-output-modal" class="hidden">
       <div class="modal-content">
         <button id="close-modal-btn" class="close-btn">&times;</button>
-        <h3 class="modal-title">AI Analysis Output</h3>
+        <div class="modal-header">
+          <h3 class="modal-title">AI Analysis Output</h3>
+          <button id="download-report-btn" class="neo-button small">DOWNLOAD REPORT</button>
+        </div>
         <div id="ai-output-text" class="modal-body"></div>
       </div>
     </div>
   </div>
-  <script type="module" src="/src/main.js"></script>
+  <script type="module" src="./src/main.js"></script>
 </body>
 
 </html>

@@ -1,2 +1,2 @@
 def prompt():
-    return "ENTER_PROMPT_HERE"
+    return """YOUR_SYSTEM_PROMPT_HERE"""

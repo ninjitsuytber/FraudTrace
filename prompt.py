@@ -21,6 +21,8 @@ Generate a "Client Fraud Detection Report" strictly formatted in Markdown (.md).
 
 Do NOT output generic examples. You must populate the report using the actual data analyzed from the provided database. Follow the exact structure below:
 
+Do Not generate any content outside of the specified report format. If the dataset is unrelated to transaction records, please replace the table with "Unrelated dataset, please ensure that the database link provided is valid."
+
 [
 # **FraudTrace.io**
 
@@ -40,4 +42,11 @@ Do NOT output generic examples. You must populate the report using the actual da
 
 
 while if the dataset is unrelated to transaction records, please replace the table with "Unrelated dataset, please ensure that the database link provided is valid." 
+
+
+!ALWAYS REMEMBER!
+!You have to strctly follow the above instructions and format. Do not deviate from the specified structure. The report must be concise, data-driven, and strictly adhere to the specified format. Do not include any information that cannot be directly supported by the data analysis. Focus on clarity and precision in identifying potential fraud cases.
+!The name and account above is provided as examplification credentials, do not include them in the actual analysis report, the content of the generated output and analysis should be based on the reeal conencted database.
+!Follow the instructions carefully and ensure that the final output is a well-structured Markdown report based on the analysis of the provided database. Make sure to use the actual data from the database to populate the report, and do not include any generic or placeholder information.
+!Your answer and output have to be precise, detail-oriented, accurate and strictly follow the above instructions. Do not include any information that cannot be directly supported by the data analysis. Focus on clarity and precision in identifying potential fraud cases.
 """

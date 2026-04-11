@@ -19,7 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-API_KEY = ""
+API_KEY = ''
 
 @app.post("/api/save-key")
 async def save_key(request: Request):
@@ -81,7 +81,7 @@ async def chat(request: Request):
         try:
             print(f"[NEURAL_LINK] Attempt {attempt + 1}: Contacting Gemini (timeout=180s)...")
             response = await client.aio.models.generate_content(
-                model="gemini-3.1-pro-preview",
+                model="gemini-3.1-flash-lite-preview",
                 contents=[f"{system_prompt}\n\nUser Input: {user_input}"]
             )
             print(f"[NEURAL_LINK] Success on attempt {attempt + 1}")
@@ -92,7 +92,7 @@ async def chat(request: Request):
             print(f"[NEURAL_LINK] Error on attempt {attempt + 1}: {e_str}")
             
             if any(keyword in error_msg for keyword in ["429", "quota", "exhausted", "404", "not found"]):
-                print("[NEURAL_LINK] Pro model exhausted/unavailable. Routing to 2.5-flash fallback...")
+                print("[NEURAL_LINK] 3.1 flash lite model exhausted/unavailable. Routing to 2.5-flash fallback...")
                 try:
                     fallback_response = await client.aio.models.generate_content(
                         model="gemini-2.5-flash",

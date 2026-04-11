@@ -2,5 +2,4 @@ fastapi
 uvicorn
 google-genai
 python-multipart
-fpdf
 markdown_pdf

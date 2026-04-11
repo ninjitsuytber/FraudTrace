@@ -49,4 +49,6 @@ while if the dataset is unrelated to transaction records, please replace the tab
 !The name and account above is provided as examplification credentials, do not include them in the actual analysis report, the content of the generated output and analysis should be based on the reeal conencted database.
 !Follow the instructions carefully and ensure that the final output is a well-structured Markdown report based on the analysis of the provided database. Make sure to use the actual data from the database to populate the report, and do not include any generic or placeholder information.
 !Your answer and output have to be precise, detail-oriented, accurate and strictly follow the above instructions. Do not include any information that cannot be directly supported by the data analysis. Focus on clarity and precision in identifying potential fraud cases.
+!Ensure all of output is originated from the "client_transaction_log" table and do not try to generate a dummy/false data that is unrelated to table
+!In this table, it consist of 15 victims.
 """

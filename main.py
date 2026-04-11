@@ -6,7 +6,7 @@ import uvicorn
 import re
 import os
 from fastapi.responses import FileResponse, Response
-from export_pdf import export_to_pdf, generate_pdf_bytes
+from export_pdf import generate_pdf_bytes
 import asyncio
 
 app = FastAPI()

@@ -91,7 +91,6 @@ async def chat(request: Request):
             error_msg = e_str.lower()
             print(f"[NEURAL_LINK] Error on attempt {attempt + 1}: {e_str}")
             
-            # If the user's key lacks quota (limit 0) for the 3.1 Pro preview model, fallback to a widely available flash model
             if any(keyword in error_msg for keyword in ["429", "quota", "exhausted", "404", "not found"]):
                 print("[NEURAL_LINK] Pro model exhausted/unavailable. Routing to 2.5-flash fallback...")
                 try:

@@ -73,3 +73,6 @@ def generate_pdf_bytes(text_content):
     pdf.multi_cell(0, 5, txt=text_content)
     return bytes(pdf.output())
 '''
+
+
+'''For commit use'''

@@ -1,4 +1,42 @@
+from markdown_pdf import MarkdownPdf, Section
+import tempfile
+import os
+
+def clean_text_for_pdf(text):
+    if not text:
+        return ""
+    replacements = {
+        '\u2018': "'", '\u2019': "'",
+        '\u201c': '"', '\u201d': '"',
+        '\u2013': "-", '\u2014': "-",
+        '\u2026': "...",
+        '\u00a0': " ",
+    }
+    for unicode_char, ascii_char in replacements.items():
+        text = text.replace(unicode_char, ascii_char)
+    return text
+
+
+def generate_pdf_bytes(text_content):
+    cleaned_content = clean_text_for_pdf(text_content)
+    pdf = MarkdownPdf(toc_level=2)
+    pdf.add_section(Section(cleaned_content))
+    
+    fd, temp_path = tempfile.mkstemp(suffix=".pdf")
+    
+    try:
+        os.close(fd)
+        pdf.save(temp_path)
+        with open(temp_path, "rb") as f:
+            pdf_bytes = f.read()
+        return pdf_bytes
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+            
+'''
 from fpdf import FPDF
+'''
 
 '''
 #Testing code for PDF export, not used in final version
@@ -7,7 +45,7 @@ response = response.replace('\u2019', "'").replace('\u2018', "'")
 response = response.replace('\u201c', '"').replace('\u201d', '"')
 response = response.encode('latin-1', 'ignore').decode('latin-1')
 '''
-
+'''
 class PDF(FPDF):
     def header(self):
         self.set_font("Arial", "B", 14)
@@ -34,3 +72,4 @@ def generate_pdf_bytes(text_content):
     pdf.set_font("Arial", "", 12)
     pdf.multi_cell(0, 5, txt=text_content)
     return bytes(pdf.output())
+'''

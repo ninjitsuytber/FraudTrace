@@ -73,5 +73,3 @@ def generate_pdf_bytes(text_content):
     pdf.multi_cell(0, 5, txt=text_content)
     return bytes(pdf.output())
 '''
-
-empty_string=Null #This is just a placeholder for git commit, not used in final version

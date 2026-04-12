@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
     neuralOverlay.classList.remove('hidden');
 
     const statusMessages = [
-      'TRACING PATHS...', 'DECRYPTING HASHES...', 'NEURAL MAPPING...', 'SYNTHESIZING DATA...', 'ESTABLISHING LINK...'
+      'TRACING PATHS...', 'SYNTAX PARSING...', 'CORRELATING SAMPLES...', 'NEURAL MAPPING...', 'SYNTHESIZING DATA...', 'ESTABLISHING LINK...'
     ];
     let statusIndex = 0;
     const statusInterval = setInterval(() => {
@@ -223,7 +223,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (neuralStatusText) neuralStatusText.textContent = statusMessages[statusIndex];
     }, 800);
 
-    const fullPrompt = `DATABASE CONTEXT:\n${databaseSummary}\n\nUSER QUERY:\n${query}`;
+    const activeTable = document.querySelector('.sidebar-item.active')?.textContent;
+    let currentTableContext = "";
+    if (activeTable) {
+      const rows = Array.from(document.querySelectorAll('#data-tbody tr')).slice(0, 15).map(tr => {
+        return Array.from(tr.querySelectorAll('td')).map(td => td.textContent).join(' | ');
+      }).join('\n');
+      if (rows) {
+        currentTableContext = `\n--- USER CURRENTLY VIEWING: ${activeTable} ---\n${rows}\n`;
+      }
+    }
+
+    const fullPrompt = `DATABASE CONTEXT:\n${databaseSummary}\n${currentTableContext}\nUSER QUERY:\n${query}`;
 
     try {
       const response = await fetch('http://127.0.0.1:8000/api/chat', {
@@ -268,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showAnalysisError(msg) {
-    aiOutputText.textContent = `SYSTEM ERROR DETECTED:\n\n${msg}\n\n[REASON: Gemini API under high demand or context limit exceeded. Please try again after a brief cooldown.]`;
+    aiOutputText.textContent = `NEURAL LINK INTERRUPTED:\n\n${msg}\n\n[REASON: The analysis engine encountered an obstacle. Ensure your API connection is stable or try refining your search query.]`;
     const downloadBtn = document.getElementById('download-report-btn');
     if (downloadBtn) downloadBtn.classList.add('hidden');
     aiOutputModal.classList.remove('hidden');
@@ -430,14 +441,37 @@ document.addEventListener('DOMContentLoaded', () => {
       const detailedTables = tablesToProbe.slice(0, 10);
       const remainingTables = tablesToProbe.slice(10);
 
+      // --- PHASE 1: DATA SAMPLING (RAG LITE) ---
+      let samplesContext = "";
+      if (dbStatus) {
+        dbStatus.textContent = 'Gathering Intelligent Context...';
+        dbStatus.className = 'status-msg info';
+      }
+
+      for (const table of detailedTables) {
+        try {
+          const { data, error } = await supabase.from(table.name).select('*').limit(5).timeout(2000);
+          if (data && data.length > 0) {
+            samplesContext += `\n[TABLE_SAMPLE: ${table.name}]\n${JSON.stringify(data, null, 2)}\n`;
+          }
+        } catch (e) {
+          console.warn(`Could not sample ${table.name}:`, e);
+        }
+      }
+
       let summary = `DATABASE CONTEXT: Connected to Supabase (${tablesToProbe.length} tables found).\n\n`;
-      summary += "--- DETAILED SCHEMAS (TOP 10) ---\n";
+      summary += "--- SYSTEM SCHEMAS (TOP 10) ---\n";
       summary += detailedTables.map(t => `- ${t.name}: [${t.columns.join(', ') || 'no columns discovered'}]`).join('\n');
+
+      if (samplesContext) {
+        summary += "\n\n--- REPRESENTATIVE DATA SAMPLES (TOP 5 ROWS) ---\n";
+        summary += samplesContext;
+      }
 
       if (remainingTables.length > 0) {
         summary += "\n\n--- OTHER DISCOVERED TABLES (NAME ONLY) ---\n";
         summary += remainingTables.map(t => t.name).join(', ');
-        summary += "\n\n(Note: If you need details on these tables, please ask.)";
+        summary += "\n\n(Note: If you need details or samples for these tables, please ask.)";
       }
 
       databaseSummary = summary;

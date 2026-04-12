@@ -3,3 +3,6 @@ uvicorn
 google-genai
 python-multipart
 markdown_pdf
+fpdf
+supabase
+numpy

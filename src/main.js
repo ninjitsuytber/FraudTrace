@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
     neuralOverlay.classList.remove('hidden');
 
     const statusMessages = [
-      'TRACING PATHS...', 'SYNTAX PARSING...', 'CORRELATING SAMPLES...', 'NEURAL MAPPING...', 'SYNTHESIZING DATA...', 'ESTABLISHING LINK...'
+      'TRACING PATHS...', 'DECRYPTING HASHES...', 'NEURAL MAPPING...', 'SYNTHESIZING DATA...', 'ESTABLISHING LINK...'
     ];
     let statusIndex = 0;
     const statusInterval = setInterval(() => {
@@ -223,26 +223,27 @@ document.addEventListener('DOMContentLoaded', () => {
       if (neuralStatusText) neuralStatusText.textContent = statusMessages[statusIndex];
     }, 800);
 
-    const activeTable = document.querySelector('.sidebar-item.active')?.textContent;
-    let currentTableContext = "";
-    if (activeTable) {
-      const rows = Array.from(document.querySelectorAll('#data-tbody tr')).slice(0, 15).map(tr => {
-        return Array.from(tr.querySelectorAll('td')).map(td => td.textContent).join(' | ');
-      }).join('\n');
-      if (rows) {
-        currentTableContext = `\n--- USER CURRENTLY VIEWING: ${activeTable} ---\n${rows}\n`;
-      }
-    }
+    const fullPrompt = `DATABASE CONTEXT:\n${databaseSummary}\n\nUSER QUERY:\n${query}`;
 
-    const fullPrompt = `DATABASE CONTEXT:\n${databaseSummary}\n${currentTableContext}\nUSER QUERY:\n${query}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 180000); // 180 second timeout
 
     try {
+      const sb_url = localStorage.getItem('fraudtrace_supabase_url');
+      const sb_key = localStorage.getItem('fraudtrace_supabase_key');
+      
       const response = await fetch('http://127.0.0.1:8000/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: fullPrompt })
+        body: JSON.stringify({ 
+          message: fullPrompt,
+          supabaseUrl: sb_url,
+          supabaseKey: sb_key
+        }),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
       const data = await response.json();
 
       if (data.error) {
@@ -255,31 +256,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } else {
         analysisInput.placeholder = originalPlaceholder;
-        aiOutputText.textContent = data.response;
+        
+        // Ensure we actually have a response before showing the modal
+        if (!data.response || data.response.trim() === '') {
+          aiOutputText.textContent = "[NEURAL_LINK_FAILURE] The investigator returned an empty report. Please check your system terminal for 'Context Received' logs or verify your API key.";
+        } else {
+          aiOutputText.textContent = data.response;
+        }
+
         const downloadBtn = document.getElementById('download-report-btn');
         if (downloadBtn) downloadBtn.classList.remove('hidden');
         aiOutputModal.classList.remove('hidden');
         setTimeout(() => aiOutputModal.classList.add('visible'), 10);
       }
     } catch (error) {
-      showAnalysisError("Neural Link Failure: " + error.message);
-    }
+      clearTimeout(timeoutId);
+      const errorMsg = error.name === 'AbortError' 
+        ? "Neural Link Timeout: The AI is taking too long to respond. Please try again or use a simpler query."
+        : "Neural Link Failure: " + error.message;
+      showAnalysisError(errorMsg);
+    } finally {
+      clearInterval(statusInterval);
+      starBorderContainer.classList.remove('analyzing');
+      analysisInput.classList.remove('hidden');
+      analyzeButton.classList.remove('hidden');
+      neuralOverlay.classList.add('hidden');
+      analysisInput.disabled = false;
+      analyzeButton.disabled = false;
 
-    clearInterval(statusInterval);
-    starBorderContainer.classList.remove('analyzing');
-    analysisInput.classList.remove('hidden');
-    analyzeButton.classList.remove('hidden');
-    neuralOverlay.classList.add('hidden');
-    analysisInput.disabled = false;
-    analyzeButton.disabled = false;
-
-    if (!analysisInput.placeholder.includes('Failed') && !analysisInput.placeholder.includes('Error')) {
-      analysisInput.placeholder = originalPlaceholder;
+      if (!analysisInput.placeholder.includes('Failed') && !analysisInput.placeholder.includes('Error') && !analysisInput.placeholder.includes('Timeout')) {
+        analysisInput.placeholder = originalPlaceholder;
+      }
     }
   }
 
   function showAnalysisError(msg) {
-    aiOutputText.textContent = `NEURAL LINK INTERRUPTED:\n\n${msg}\n\n[REASON: The analysis engine encountered an obstacle. Ensure your API connection is stable or try refining your search query.]`;
+    aiOutputText.textContent = `SYSTEM ERROR DETECTED:\n\n${msg}\n\n[REASON: Gemini API under high demand or context limit exceeded. Please try again after a brief cooldown.]`;
     const downloadBtn = document.getElementById('download-report-btn');
     if (downloadBtn) downloadBtn.classList.add('hidden');
     aiOutputModal.classList.remove('hidden');
@@ -441,37 +453,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const detailedTables = tablesToProbe.slice(0, 10);
       const remainingTables = tablesToProbe.slice(10);
 
-      // --- PHASE 1: DATA SAMPLING (RAG LITE) ---
-      let samplesContext = "";
-      if (dbStatus) {
-        dbStatus.textContent = 'Gathering Intelligent Context...';
-        dbStatus.className = 'status-msg info';
-      }
-
-      for (const table of detailedTables) {
-        try {
-          const { data, error } = await supabase.from(table.name).select('*').limit(5).timeout(2000);
-          if (data && data.length > 0) {
-            samplesContext += `\n[TABLE_SAMPLE: ${table.name}]\n${JSON.stringify(data, null, 2)}\n`;
-          }
-        } catch (e) {
-          console.warn(`Could not sample ${table.name}:`, e);
-        }
-      }
-
       let summary = `DATABASE CONTEXT: Connected to Supabase (${tablesToProbe.length} tables found).\n\n`;
-      summary += "--- SYSTEM SCHEMAS (TOP 10) ---\n";
+      summary += "--- DETAILED SCHEMAS (TOP 10) ---\n";
       summary += detailedTables.map(t => `- ${t.name}: [${t.columns.join(', ') || 'no columns discovered'}]`).join('\n');
-
-      if (samplesContext) {
-        summary += "\n\n--- REPRESENTATIVE DATA SAMPLES (TOP 5 ROWS) ---\n";
-        summary += samplesContext;
-      }
 
       if (remainingTables.length > 0) {
         summary += "\n\n--- OTHER DISCOVERED TABLES (NAME ONLY) ---\n";
         summary += remainingTables.map(t => t.name).join(', ');
-        summary += "\n\n(Note: If you need details or samples for these tables, please ask.)";
+        summary += "\n\n(Note: If you need details on these tables, please ask.)";
       }
 
       databaseSummary = summary;

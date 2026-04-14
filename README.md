@@ -1,8 +1,8 @@
-# FraudTrace.io
+# FraudTrace
 
 > **AI-Powered Database Forensics & Fraud Detection Platform**
 
-FraudTrace.io is a full-stack forensic intelligence tool that connects to any Supabase database, performs deep agentic RAG (Retrieval-Augmented Generation) analysis using Google Gemini AI, and generates structured, professional-grade forensic PDF reports — all through a stunning noir-aesthetic web interface.
+FraudTrace is a full-stack forensic intelligence tool that connects to any Supabase database, performs deep agentic RAG (Retrieval-Augmented Generation) analysis using Google Gemini AI, and generates structured, professional-grade forensic PDF reports — all through a stunning noir-aesthetic web interface.
 
 ---
 
@@ -26,7 +26,7 @@ FraudTrace.io is a full-stack forensic intelligence tool that connects to any Su
 
 ## Overview
 
-FraudTrace.io is a dual-process application — a **Vite-powered frontend** served on `localhost:5173` and a **FastAPI Python backend** running on `localhost:8000`. Users authenticate with a Google Gemini API key, connect their Supabase project, then issue natural language forensic instructions. The AI backend autonomously queries the live database using function-calling tools, performs cross-table reconciliation, and returns a fully structured Markdown forensic report that can be exported as a professional PDF.
+FraudTrace is a dual-process application — a **Vite-powered frontend** served on `localhost:5173` and a **FastAPI Python backend** running on `localhost:8000`. Users authenticate with a Google Gemini API key, connect their Supabase project, then issue natural language forensic instructions. The AI backend autonomously queries the live database using function-calling tools, performs cross-table reconciliation, and returns a fully structured Markdown forensic report that can be exported as a professional PDF.
 
 The system is designed for:
 
@@ -688,7 +688,7 @@ The PDF renderer splits the report at each `##` section heading to ensure clean 
 
    END OF TERMS AND CONDITIONS
 
-   Copyright 2024 FraudTrace.io Contributors
+   Copyright 2024 FraudTrace Contributors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.

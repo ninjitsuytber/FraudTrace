@@ -20,7 +20,6 @@ FraudTrace is a full-stack forensic intelligence tool that connects to any Supab
 - [Installation & Local Development](#installation--local-development)
 - [Environment & Configuration](#environment--configuration)
 - [PDF Report Structure](#pdf-report-structure)
-- [License](#license)
 
 ---
 
@@ -540,6 +539,14 @@ The PDF renderer splits the report at each `##` section heading to ensure clean 
 
 ---
 
+## Authors
+
+- **[ninjitsuytber](https://github.com/ninjitsuytber)** (Stephen Sii)
+- **[leeyunsheng06](https://github.com/leeyunsheng06)** (Lee Yun Sheng)
+- **[ngk891796-png](https://github.com/ngk891796-png)**
+
+---
+
 <p align="center">
-  Built with Vite · FastAPI · Google Gemini · Supabase
+  Built with Vite &middot; FastAPI &middot; Google Gemini &middot; Supabase
 </p>

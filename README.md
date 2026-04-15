@@ -543,7 +543,7 @@ The PDF renderer splits the report at each `##` section heading to ensure clean 
 
 - **[ninjitsuytber](https://github.com/ninjitsuytber)** (Stephen Sii)
 - **[leeyunsheng06](https://github.com/leeyunsheng06)** (Lee Yun Sheng)
-- **[ngk891796-png](https://github.com/ngk891796-png)**
+- **[ngk891796-png](https://github.com/ngk891796-png)** (Kelvin Ng)
 
 ---
 

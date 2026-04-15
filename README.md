@@ -539,6 +539,18 @@ The PDF renderer splits the report at each `##` section heading to ensure clean 
 
 ---
 
+## FraudTrace's Star History
+
+<a href="https://www.star-history.com/?repos=ninjitsuytber%2FFraudTrace&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=ninjitsuytber/FraudTrace&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=ninjitsuytber/FraudTrace&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=ninjitsuytber/FraudTrace&type=date&legend=top-left" />
+ </picture>
+</a>
+
+---
+
 ## Authors
 
 - **[ninjitsuytber](https://github.com/ninjitsuytber)** (Stephen Sii)

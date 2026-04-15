@@ -540,8 +540,6 @@ The PDF renderer splits the report at each `##` section heading to ensure clean 
 
 ---
 
----
-
 <p align="center">
   Built with Vite · FastAPI · Google Gemini · Supabase
 </p>

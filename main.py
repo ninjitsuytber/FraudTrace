@@ -22,7 +22,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-API_KEY = ''
+API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 
 @app.post("/api/save-key")
 async def save_key(request: Request):
@@ -55,14 +55,6 @@ async def save_key(request: Request):
             
             await asyncio.sleep(1.5 * (attempt + 1))
     
-    with open(__file__, "r", encoding="utf-8") as f:
-        content = f.read()
-    
-    new_content = re.sub(r"^API_KEY\s*=\s*['\"].*?['\"]", f"API_KEY = {repr(key)}", content, flags=re.MULTILINE)
-    
-    with open(__file__, "w", encoding="utf-8") as f:
-        f.write(new_content)
-        
     global API_KEY
     API_KEY = key
     

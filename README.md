@@ -198,7 +198,7 @@ Clicking "ENTER SYSTEM" transitions to the **System Auth View**. The user pastes
 
 1. The frontend POSTs `{ apiKey }` to `/api/save-key`.
 2. The backend creates a `genai.Client`, sends a test `generate_content("Verify connection")` call to `gemini-1.5-flash` with retry logic (3 attempts, exponential backoff).
-3. On success, the backend **rewrites its own source file** (`main.py`) using `re.sub` to persist the API key in the `API_KEY` constant, and updates the module-level global.
+3. On success, the backend updates the global `API_KEY` in memory for the current session.
 4. The key is also saved to `localStorage` as `fraudtrace_gemini_api_key`.
 
 ### Step 3 — Supabase Database Connection
@@ -505,11 +505,11 @@ FraudTrace uses a **no-`.env`-file** approach by design. All sensitive credentia
 
 | Credential | Storage Location |
 |---|---|
-| Gemini API Key | `localStorage` (`fraudtrace_gemini_api_key`) + auto-patched into `main.py` |
+| Gemini API Key | `localStorage` (`fraudtrace_gemini_api_key`) |
 | Supabase Project URL | `localStorage` (`fraudtrace_supabase_url`) |
 | Supabase Publishable Key | `localStorage` (`fraudtrace_supabase_key`) |
 
-> **Note:** The self-modifying `API_KEY` pattern in `main.py` is an embedded convenience mechanism for local use. For production deployments, replace this with a proper environment variable or secrets manager.
+> **Note:** For production deployments, ensure all sensitive keys are managed via environment variables (e.g., `GOOGLE_API_KEY`) or a secrets manager.
 
 ### AI Model Priority Chain
 

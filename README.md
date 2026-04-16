@@ -519,6 +519,10 @@ The backend cycles through these models automatically on failure:
 gemini-3.1-flash → gemini-3.1-flash-lite-preview → gemini-2.5-flash → gemini-2.0-flash → gemini-1.5-flash
 ```
 
+---
+You can have full control in changing and configure which model to start and the following fallback model.
+---
+
 Fallback triggers on HTTP status codes: `404`, `429`, `503` and errors matching: `NOT_FOUND`, `quota`, `exhausted`, `UNAVAILABLE`, `demand`, `deadline`, `timed out`, `timeout`.
 
 ---
